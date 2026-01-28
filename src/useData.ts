@@ -22,7 +22,7 @@ export const useData = () => {
         });
       } else {
         // Fallback to localStorage for Web/Mobile
-        const storedData = localStorage.getItem('salary-manager-data');
+        const storedData = localStorage.getItem('corgibank-data');
         if (storedData) {
           setData(JSON.parse(storedData));
         } else {
@@ -49,7 +49,7 @@ export const useData = () => {
       await window.ipcRenderer.invoke('write-data', newData);
     } else {
       // Save to localStorage for Web/Mobile
-      localStorage.setItem('salary-manager-data', JSON.stringify(newData));
+      localStorage.setItem('corgibank-data', JSON.stringify(newData));
     }
   };
 

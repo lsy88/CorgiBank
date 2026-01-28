@@ -1,8 +1,8 @@
-import { app as s, ipcMain as a, shell as f, BrowserWindow as l } from "electron";
+import { app as i, ipcMain as a, shell as f, BrowserWindow as l } from "electron";
 import { fileURLToPath as h } from "node:url";
 import e from "node:path";
 import t from "node:fs";
-const d = e.dirname(h(import.meta.url)), o = e.join(s.getPath("userData"), "salary-manager-data.json");
+const d = e.dirname(h(import.meta.url)), o = e.join(i.getPath("userData"), "corgibank-data.json");
 a.handle("read-data", () => {
   try {
     if (!t.existsSync(o))
@@ -30,8 +30,8 @@ a.handle("open-data-folder", () => {
   f.showItemInFolder(o);
 });
 process.env.APP_ROOT = e.join(d, "..");
-const i = process.env.VITE_DEV_SERVER_URL, S = e.join(process.env.APP_ROOT, "dist-electron"), p = e.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = i ? e.join(process.env.APP_ROOT, "public") : p;
+const s = process.env.VITE_DEV_SERVER_URL, S = e.join(process.env.APP_ROOT, "dist-electron"), p = e.join(process.env.APP_ROOT, "dist");
+process.env.VITE_PUBLIC = s ? e.join(process.env.APP_ROOT, "public") : p;
 let r;
 function m() {
   r = new l({
@@ -44,17 +44,17 @@ function m() {
     }
   }), r.webContents.on("did-finish-load", () => {
     r == null || r.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
-  }), i ? r.loadURL(i) : r.loadFile(e.join(p, "index.html"));
+  }), s ? r.loadURL(s) : r.loadFile(e.join(p, "index.html"));
 }
-s.on("window-all-closed", () => {
-  process.platform !== "darwin" && (s.quit(), r = null);
+i.on("window-all-closed", () => {
+  process.platform !== "darwin" && (i.quit(), r = null);
 });
-s.on("activate", () => {
+i.on("activate", () => {
   l.getAllWindows().length === 0 && m();
 });
-s.whenReady().then(m);
+i.whenReady().then(m);
 export {
   S as MAIN_DIST,
   p as RENDERER_DIST,
-  i as VITE_DEV_SERVER_URL
+  s as VITE_DEV_SERVER_URL
 };

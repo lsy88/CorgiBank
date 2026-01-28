@@ -6,7 +6,7 @@ import fs from 'node:fs'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Data persistence
-const DATA_FILE = path.join(app.getPath('userData'), 'salary-manager-data.json')
+const DATA_FILE = path.join(app.getPath('userData'), 'corgibank-data.json')
 
 ipcMain.handle('read-data', () => {
   try {
