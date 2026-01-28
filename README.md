@@ -1,6 +1,11 @@
-# <img src="./public/icon.png" width="48" style="vertical-align: bottom;" /> 记账管家 (Salary Manager)
-
-一款基于 Electron + React + TypeScript 开发的桌面端计件工资管理系统。专为小型工厂或作坊设计，帮助管理者轻松记录员工生产情况，自动核算工资。
+<div align="center">
+  <img src="./public/icon.png" width="64" />
+  <h1>柯基记账</h1>
+  <p>
+    一款基于 Electron + React + TypeScript 开发的桌面端计件工资管理系统。<br/>
+    专为小型工厂或作坊设计，帮助管理者轻松记录员工生产情况，自动核算工资。
+  </p>
+</div>
 
 ## ✨ 主要功能
 
