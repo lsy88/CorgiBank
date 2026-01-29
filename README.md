@@ -29,7 +29,15 @@
     *   大窗口设计 (1200x900)，数据展示更清晰。
     *   左侧菜单栏支持折叠。
 
-## 🛠️ 技术栈
+## � 界面预览
+
+<div align="center">
+  <img src="./images/23A216B3-057E-4074-88EF-6F724AF451A3.png" width="800" style="margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+  <img src="./images/45D6BF8B-238D-46a9-BCFA-3B309C89ECF2.png" width="800" style="margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+  <img src="./images/561CC7E4-20BC-421e-98CF-A08873303176.png" width="800" style="margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+</div>
+
+## �🛠️ 技术栈
 
 *   **Core**: Electron
 *   **Frontend**: React, TypeScript, Vite
