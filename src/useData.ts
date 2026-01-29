@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { AppData, Employee, Product, Material, WorkRecord } from './types';
+import { AppData, Employee, Product, Material, WorkRecord, Batch, LossRecord } from './types';
 
 export const useData = () => {
-  const [data, setData] = useState<AppData>({ employees: [], products: [], materials: [], records: [] });
+  const [data, setData] = useState<AppData>({ employees: [], products: [], materials: [], records: [], batches: [], losses: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,20 +18,32 @@ export const useData = () => {
           employees: result.employees || [],
           products: result.products || [],
           materials: result.materials || [],
-          records: result.records || []
+          records: result.records || [],
+          batches: result.batches || [],
+          losses: result.losses || []
         });
       } else {
         // Fallback to localStorage for Web/Mobile
         const storedData = localStorage.getItem('corgibank-data');
         if (storedData) {
-          setData(JSON.parse(storedData));
+          const parsed = JSON.parse(storedData);
+          setData({
+             employees: parsed.employees || [],
+             products: parsed.products || [],
+             materials: parsed.materials || [],
+             records: parsed.records || [],
+             batches: parsed.batches || [],
+             losses: parsed.losses || []
+          });
         } else {
           // Initial seed data if nothing in storage
           const initialData: AppData = {
             employees: [],
             products: [],
             materials: [],
-            records: []
+            records: [],
+            batches: [],
+            losses: []
           };
           setData(initialData);
         }
@@ -117,6 +129,38 @@ export const useData = () => {
     saveData({ ...data, records: data.records.filter(r => r.id !== id) });
   };
 
+  // Batch Actions
+  const addBatch = (batch: Batch) => {
+    saveData({ ...data, batches: [...data.batches, batch] });
+  };
+
+  const updateBatch = (batch: Batch) => {
+    saveData({
+      ...data,
+      batches: data.batches.map(b => b.id === batch.id ? batch : b)
+    });
+  };
+
+  const deleteBatch = (id: string) => {
+    saveData({ ...data, batches: data.batches.filter(b => b.id !== id) });
+  };
+
+  // Loss Actions
+  const addLoss = (loss: LossRecord) => {
+    saveData({ ...data, losses: [...(data.losses || []), loss] });
+  };
+
+  const updateLoss = (loss: LossRecord) => {
+    saveData({
+      ...data,
+      losses: (data.losses || []).map(l => l.id === loss.id ? loss : l)
+    });
+  };
+
+  const deleteLoss = (id: string) => {
+    saveData({ ...data, losses: (data.losses || []).filter(l => l.id !== id) });
+  };
+
   const openDataFolder = async () => {
     if (window.ipcRenderer) {
       await window.ipcRenderer.invoke('open-data-folder');
@@ -140,6 +184,12 @@ export const useData = () => {
     addRecord,
     updateRecord,
     deleteRecord,
+    addBatch,
+    updateBatch,
+    deleteBatch,
+    addLoss,
+    updateLoss,
+    deleteLoss,
     openDataFolder
   };
 };
