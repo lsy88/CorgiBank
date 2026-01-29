@@ -1,60 +1,108 @@
-import { app as s, ipcMain as a, shell as f, BrowserWindow as l } from "electron";
-import { fileURLToPath as h } from "node:url";
-import e from "node:path";
-import t from "node:fs";
-const d = e.dirname(h(import.meta.url)), o = e.join(s.getPath("userData"), "corgibank-data.json");
-a.handle("read-data", () => {
+import { app, ipcMain, shell, BrowserWindow } from "electron";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+import fs from "node:fs";
+const __dirname$1 = path.dirname(fileURLToPath(import.meta.url));
+const DATA_FILE = path.join(app.getPath("userData"), "corgibank-data.json");
+const BACKUP_FILE = path.join(app.getPath("userData"), "corgibank-data.bak");
+const TEMP_FILE = path.join(app.getPath("userData"), "corgibank-data.temp");
+ipcMain.handle("read-data", () => {
   try {
-    if (!t.existsSync(o))
-      return { employees: [], products: [], materials: [], records: [] };
-    const n = t.readFileSync(o, "utf-8");
-    return JSON.parse(n);
-  } catch (n) {
-    return console.error("Failed to read data:", n), { employees: [], products: [], materials: [], records: [] };
-  }
-});
-a.handle("write-data", (n, u) => {
-  try {
-    return t.writeFileSync(o, JSON.stringify(u, null, 2)), { success: !0 };
-  } catch (c) {
-    return console.error("Failed to write data:", c), { success: !1, error: c };
-  }
-});
-a.handle("open-data-folder", () => {
-  if (!t.existsSync(o))
-    try {
-      t.existsSync(e.dirname(o)) || t.mkdirSync(e.dirname(o), { recursive: !0 }), t.writeFileSync(o, JSON.stringify({ employees: [], products: [], materials: [], records: [] }, null, 2));
-    } catch (n) {
-      console.error("Failed to create initial data file", n);
+    if (fs.existsSync(DATA_FILE)) {
+      try {
+        const data = fs.readFileSync(DATA_FILE, "utf-8");
+        return JSON.parse(data);
+      } catch (e) {
+        console.error("Main data file corrupted, trying backup...", e);
+        if (fs.existsSync(BACKUP_FILE)) {
+          const backupData = fs.readFileSync(BACKUP_FILE, "utf-8");
+          return JSON.parse(backupData);
+        }
+        throw e;
+      }
     }
-  f.showItemInFolder(o);
+    return { employees: [], products: [], materials: [], records: [], batches: [], losses: [] };
+  } catch (error) {
+    console.error("Failed to read data:", error);
+    return { employees: [], products: [], materials: [], records: [], batches: [], losses: [] };
+  }
 });
-process.env.APP_ROOT = e.join(d, "..");
-const i = process.env.VITE_DEV_SERVER_URL, S = e.join(process.env.APP_ROOT, "dist-electron"), p = e.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = i ? e.join(process.env.APP_ROOT, "public") : p;
-let r;
-function m() {
-  r = new l({
+ipcMain.handle("write-data", (_, data) => {
+  try {
+    const jsonStr = JSON.stringify(data, null, 2);
+    fs.writeFileSync(TEMP_FILE, jsonStr);
+    if (fs.existsSync(DATA_FILE)) {
+      try {
+        fs.copyFileSync(DATA_FILE, BACKUP_FILE);
+      } catch (e) {
+        console.warn("Failed to create backup:", e);
+      }
+    }
+    try {
+      fs.copyFileSync(TEMP_FILE, DATA_FILE);
+      fs.unlinkSync(TEMP_FILE);
+    } catch (e) {
+      console.warn("Atomic move failed, trying direct write", e);
+      fs.writeFileSync(DATA_FILE, jsonStr);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to write data:", error);
+    return { success: false, error };
+  }
+});
+ipcMain.handle("open-data-folder", () => {
+  if (!fs.existsSync(DATA_FILE)) {
+    try {
+      if (!fs.existsSync(path.dirname(DATA_FILE))) {
+        fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
+      }
+      fs.writeFileSync(DATA_FILE, JSON.stringify({ employees: [], products: [], materials: [], records: [] }, null, 2));
+    } catch (e) {
+      console.error("Failed to create initial data file", e);
+    }
+  }
+  shell.showItemInFolder(DATA_FILE);
+});
+process.env.APP_ROOT = path.join(__dirname$1, "..");
+const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
+const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
+const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
+process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
+let win;
+function createWindow() {
+  win = new BrowserWindow({
     width: 1200,
     height: 900,
-    icon: e.join(process.env.VITE_PUBLIC, "logo.png"),
-    autoHideMenuBar: !0,
+    icon: path.join(process.env.VITE_PUBLIC, "logo.png"),
+    autoHideMenuBar: true,
     webPreferences: {
-      preload: e.join(d, "preload.mjs")
+      preload: path.join(__dirname$1, "preload.mjs")
     }
-  }), r.webContents.on("did-finish-load", () => {
-    r == null || r.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
-  }), i ? r.loadURL(i) : r.loadFile(e.join(p, "index.html"));
+  });
+  win.webContents.on("did-finish-load", () => {
+    win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
+  });
+  if (VITE_DEV_SERVER_URL) {
+    win.loadURL(VITE_DEV_SERVER_URL);
+  } else {
+    win.loadFile(path.join(RENDERER_DIST, "index.html"));
+  }
 }
-s.on("window-all-closed", () => {
-  process.platform !== "darwin" && (s.quit(), r = null);
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+    win = null;
+  }
 });
-s.on("activate", () => {
-  l.getAllWindows().length === 0 && m();
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });
-s.whenReady().then(m);
+app.whenReady().then(createWindow);
 export {
-  S as MAIN_DIST,
-  p as RENDERER_DIST,
-  i as VITE_DEV_SERVER_URL
+  MAIN_DIST,
+  RENDERER_DIST,
+  VITE_DEV_SERVER_URL
 };

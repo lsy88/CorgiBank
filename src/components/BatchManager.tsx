@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, Space, Popconfirm, Card, DatePicker, Select, InputNumber, Divider, Row, Col, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, MinusCircleOutlined, SyncOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, MinusCircleOutlined, SyncOutlined, CopyOutlined } from '@ant-design/icons';
 import { Batch, AppData } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import dayjs from 'dayjs';
@@ -35,6 +35,19 @@ export const BatchManager: React.FC<Props> = ({ data, onAdd, onUpdate, onDelete 
     form.setFieldsValue({
         ...record,
         date: dayjs(record.date)
+    });
+    setIsModalVisible(true);
+  };
+
+  const handleCopy = (record: Batch) => {
+    setEditingBatch(null); // Treat as new batch
+    form.setFieldsValue({
+        ...record,
+        name: `${record.name} (复制)`,
+        date: dayjs(), // Default to today
+        products: record.products || [],
+        materials: record.materials || [],
+        employees: record.employees || []
     });
     setIsModalVisible(true);
   };
@@ -80,6 +93,9 @@ export const BatchManager: React.FC<Props> = ({ data, onAdd, onUpdate, onDelete 
       key: 'action',
       render: (_: any, record: Batch) => (
         <Space size="middle">
+          <Tooltip title="复制此批次">
+            <Button icon={<CopyOutlined />} onClick={() => handleCopy(record)} />
+          </Tooltip>
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
           <Popconfirm title="确定删除吗?" onConfirm={() => onDelete(record.id)}>
             <Button icon={<DeleteOutlined />} danger>删除</Button>

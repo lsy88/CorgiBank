@@ -7,23 +7,60 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // Data persistence
 const DATA_FILE = path.join(app.getPath('userData'), 'corgibank-data.json')
+const BACKUP_FILE = path.join(app.getPath('userData'), 'corgibank-data.bak')
+const TEMP_FILE = path.join(app.getPath('userData'), 'corgibank-data.temp')
 
 ipcMain.handle('read-data', () => {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      return { employees: [], products: [], materials: [], records: [] }
+    // Try reading the main file first
+    if (fs.existsSync(DATA_FILE)) {
+      try {
+        const data = fs.readFileSync(DATA_FILE, 'utf-8')
+        return JSON.parse(data)
+      } catch (e) {
+        console.error('Main data file corrupted, trying backup...', e)
+        // If main file is corrupted, try backup
+        if (fs.existsSync(BACKUP_FILE)) {
+          const backupData = fs.readFileSync(BACKUP_FILE, 'utf-8')
+          return JSON.parse(backupData)
+        }
+        throw e // If both fail, throw error
+      }
     }
-    const data = fs.readFileSync(DATA_FILE, 'utf-8')
-    return JSON.parse(data)
+    return { employees: [], products: [], materials: [], records: [], batches: [], losses: [] }
   } catch (error) {
     console.error('Failed to read data:', error)
-    return { employees: [], products: [], materials: [], records: [] }
+    return { employees: [], products: [], materials: [], records: [], batches: [], losses: [] }
   }
 })
 
 ipcMain.handle('write-data', (_, data) => {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2))
+    const jsonStr = JSON.stringify(data, null, 2)
+    
+    // 1. Write to temp file first (Atomic Write Step 1)
+    fs.writeFileSync(TEMP_FILE, jsonStr)
+    
+    // 2. Backup existing file if it exists
+    if (fs.existsSync(DATA_FILE)) {
+      try {
+        fs.copyFileSync(DATA_FILE, BACKUP_FILE)
+      } catch (e) {
+        console.warn('Failed to create backup:', e)
+      }
+    }
+    
+    // 3. Rename temp to actual file (Atomic Write Step 2)
+    // On Windows, rename might fail if destination exists, so we copy and unlink
+    try {
+        fs.copyFileSync(TEMP_FILE, DATA_FILE)
+        fs.unlinkSync(TEMP_FILE)
+    } catch (e) {
+        // Fallback for some systems
+        console.warn('Atomic move failed, trying direct write', e)
+        fs.writeFileSync(DATA_FILE, jsonStr)
+    }
+    
     return { success: true }
   } catch (error) {
     console.error('Failed to write data:', error)
